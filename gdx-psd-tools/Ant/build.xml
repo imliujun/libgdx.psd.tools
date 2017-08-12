@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<project name="PsdTools" default="PsdTools" basedir=".">
+    <property environment="env"/>
+
+    <taskdef name="bundleapp"
+             classname="com.oracle.appbundler.AppBundlerTask"
+             classpath="lib/appbundler-1.0ea.jar"/>
+
+    <target name="PsdTools">
+
+        <bundleapp outputdirectory="."
+                   name="PsdTools"
+                   displayname="PsdTools"
+                   identifier="gdx.keyroy"
+                   shortversion="1.0"
+                   applicationCategory="public.app-category.developer-tools"
+                   mainclassname="gdx.keyroy.psd.tools.PsdTools">
+            <classpath file="PsdTools.jar"/>
+            <option value="-Dapple.laf.useScreenMenuBar=true"/>
+        </bundleapp>
+    </target>
+
+    <!-- Test targets -->
+    <target name="PsdToolsAddJre">
+
+        <bundleapp outputdirectory="."
+                   name="PsdTools_Jre"
+                   displayname="PsdTools_Jre"
+                   identifier="gdx.keyroy"
+                   shortversion="1.0"
+                   applicationCategory="public.app-category.developer-tools"
+                   mainclassname="gdx.keyroy.psd.tools.PsdTools">
+            <runtime dir="${env.JAVA_HOME}"/>
+            <classpath file="PsdTools.jar"/>
+            <option value="-Dapple.laf.useScreenMenuBar=true"/>
+        </bundleapp>
+    </target>
+
+    <!-- Clean target -->
+    <target name="clean">
+        <delete dir="PsdTools.app"/>
+        <delete dir="PsdTools_Jre.app"/>
+    </target>
+
+</project>

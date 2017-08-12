@@ -75,7 +75,7 @@ public class XlsxParser {
 
 	// 数据结构
 	private static class ColumnData {
-		// 变量�?
+		// 变量名
 		String fieldName;
 		// 对象类型
 		boolean isObject;

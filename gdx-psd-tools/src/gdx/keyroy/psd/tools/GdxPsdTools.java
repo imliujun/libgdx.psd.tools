@@ -38,195 +38,202 @@ import psd.Text;
 
 public class GdxPsdTools {
 
-	private static final void send(String msg) {
-		send(msg, null);
-	}
+    private static final void send(String msg) {
+        send(msg, null);
+    }
 
-	private static final void send(String msg, MessageKey messageKey) {
-		Messager.send(msg, messageKey);
-	}
+    private static final void send(String msg, MessageKey messageKey) {
+        Messager.send(msg, messageKey);
+    }
 
-	public static final void export() {
-		send("Exporting", MessageKey.H1);
-		File packFolder = new File(EditorConfig.export_path);
-		send("cleaning", MessageKey.H2);
-		// Çå¿ÕÎÄ¼ş¼ĞÄ¿Â¼
-		FileUtil.delete(packFolder);
-		packFolder.mkdirs();
+    public static final void export() {
+        send("Exporting", MessageKey.H1);
+        File packFolder = new File(EditorConfig.export_path);
+        send("cleaning", MessageKey.H2);
+        // æ¸…ç©ºæ–‡ä»¶å¤¹ç›®å½•
+        FileUtil.delete(packFolder);
+        packFolder.mkdirs();
 
-		send("cleaning ok", MessageKey.H2);
-		// ±£´æÊı¾İÎÄ¼ş
-		List<PSDData> psdDatas = EditorData.getPsdDatas();
-		// ½âÎö´íÎóµÄÀà
-		Set<PSDData> errors = new HashSet<PSDData>();
-		for (PSDData psdData : psdDatas) {
-			try {
-				send("saving json on : " + psdData.getFileName(), MessageKey.H2);
-				PsdFile psdFile = translate(psdData);
-				if (EditorConfig.used_texture_packer) {
-					psdFile.atlas = psdData.getFileName() + ".atlas";
-				}
-				String json = new Json(psdFile).toString();
-				System.out.println(json);
-				File file = new File(packFolder, psdData.getFileName() + ".json");
-				FileUtil.save(file, json);
-				send("save json ok : " + file.getPath());
-			} catch (Exception e) {
-				// e.printStackTrace();
-				errors.add(psdData);
-				Messager.send(L.get("error.parse_psd_file_failed") + " : " + psdData.getFilePath());
-			}
-		}
+        send("cleaning ok", MessageKey.H2);
+        // ä¿å­˜æ•°æ®æ–‡ä»¶
+        List<PSDData> psdDatas = EditorData.getPsdDatas();
+        // è§£æé”™è¯¯çš„ç±»
+        Set<PSDData> errors = new HashSet<PSDData>();
+        for (PSDData psdData : psdDatas) {
+            try {
+                send("saving json on : " + psdData.getFileName(), MessageKey.H2);
+                PsdFile psdFile = translate(psdData);
+                if (EditorConfig.used_texture_packer) {
+                    psdFile.atlas = psdData.getFileName() + ".atlas";
+                }
+                String json = new Json(psdFile).toString();
+                System.out.println(json);
 
-		// ´ò°üÍ¼Æ¬
-		for (PSDData psdData : psdDatas) {
-			try {// ¹ıÂËµô½âÎö´íÎóµÄÀà
-				if (errors.contains(psdData) == false) {
-					send("saving image on : " + psdData.getFileName(), MessageKey.H2);
-					packageImage(packFolder, psdData);
-					send("save image ok : " + psdData.getFilePath());
-				}
-			} catch (Exception e) {
-				// e.printStackTrace();
-				Messager.send(L.get("error.parse_psd_file_failed") + " : " + psdData.getFilePath());
-			}
-		}
+                File psdFolder = new File(packFolder, psdData.getFileName());
+                // æ¸…ç©ºæ–‡ä»¶å¤¹ç›®å½•
+                FileUtil.delete(psdFolder);
+                psdFolder.mkdirs();
 
-		send("all done", MessageKey.H2);
-		send("export data complete : " + packFolder.getPath());
-	}
+                File file = new File(psdFolder, psdData.getFileName() + ".json");
+                FileUtil.save(file, json);
+                send("save json ok : " + file.getPath());
+            } catch (Exception e) {
+                // e.printStackTrace();
+                errors.add(psdData);
+                Messager.send(L.get("error.parse_psd_file_failed") + " : " + psdData.getFilePath());
+            }
+        }
 
-	public static final void packageImage(File packFolder, PSDData psdData) {
-		Psd psd = psdData.getCache();
-		List<Layer> layers = new ArrayList<Layer>();
-		filterImage(psd, layers);
-		//
-		if (EditorConfig.used_texture_packer) { // Ê¹ÓÃ TexturePacker ´ò°üÍ¼Æ¬
-			final Settings settings = new Settings();
-			settings.pot = false;
-			settings.maxWidth = 2048;
-			settings.maxHeight = 2048;
-			TexturePacker packer = new TexturePacker(settings);
-			for (Layer layer : layers) {
-				packer.addImage(layer.getImage(), layer.getName());
-			}
-			String imagePath = psdData.getFileName() + ".atlas";
-			Messager.send("saving image : " + imagePath);
-			packer.pack(packFolder, imagePath);
+        // æ‰“åŒ…å›¾ç‰‡
+        for (PSDData psdData : psdDatas) {
+            try {// è¿‡æ»¤æ‰è§£æé”™è¯¯çš„ç±»
+                if (errors.contains(psdData) == false) {
+                    send("saving image on : " + psdData.getFileName(), MessageKey.H2);
+                    File psdFolder = new File(packFolder, psdData.getFileName());
+                    packageImage(psdFolder, psdData);
+                    send("save image ok : " + psdData.getFilePath());
+                }
+            } catch (Exception e) {
+                // e.printStackTrace();
+                Messager.send(L.get("error.parse_psd_file_failed") + " : " + psdData.getFilePath());
+            }
+        }
 
-		} else {
-			for (Layer layer : layers) {
-				BufferedImage bufferedImage = layer.getImage();
-				File file = new File(packFolder, layer.getName() + ".png");
-				try {
-					Messager.send("saving image : " + file.getPath());
-					FileOutputStream outputStream = new FileOutputStream(file);
-					ImageIO.write(bufferedImage, "png", outputStream);
-					outputStream.close();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
+        send("all done", MessageKey.H2);
+        send("export data complete : " + packFolder.getPath());
+    }
 
-	public static final void filterImage(LayersContainer container, List<Layer> out) {
-		for (int i = 0; i < container.getLayersCount(); i++) {
-			Layer layer = container.getLayer(i);
-			if (layer.isFolder() || layer.isTextLayer()) {
-			} else if (layer.getImage() != null) {
-				out.add(layer);
-			}
-			filterImage(layer, out);
-		}
-	}
+    public static final void packageImage(File packFolder, PSDData psdData) {
+        Psd psd = psdData.getCache();
+        List<Layer> layers = new ArrayList<Layer>();
+        filterImage(psd, layers);
+        //
+        if (EditorConfig.used_texture_packer) { // ä½¿ç”¨ TexturePacker æ‰“åŒ…å›¾ç‰‡
+            final Settings settings = new Settings();
+            settings.pot = false;
+            settings.maxWidth = 2048;
+            settings.maxHeight = 2048;
+            TexturePacker packer = new TexturePacker(settings);
+            for (Layer layer : layers) {
+                packer.addImage(layer.getImage(), layer.getName());
+            }
+            String imagePath = psdData.getFileName() + ".atlas";
+            Messager.send("saving image : " + imagePath);
+            packer.pack(packFolder, imagePath);
 
-	// ¶ÔÏó×ª»»
-	public static final PsdFile translate(PSDData psdData) {
-		Psd psd = psdData.getCache();
-		PSDUtil.updatePsdLayerPosition(psd);
-		Rectangle rect = PSDUtil.getMaxSize(psd);
-		PsdFile psdFile = new PsdFile();
-		psdFile.width = psd.getWidth();
-		psdFile.height = psd.getHeight();
-		psdFile.maxWidth = rect.width;
-		psdFile.maxHeight = rect.height;
-		psdFile.psdName = psdData.getFileName();
-		// ²ÎÊı
-		List<LayerParam> layerParams = psdData.getLayerParams(null);
-		if (layerParams != null && layerParams.size() > 0) {
-			psdFile.params = new ArrayList<Param>(layerParams.size());
-			// for (LayerParam layerParam : layerParams) {
-			//// psdFile.params.add(new Param(layerParam.getParamId(),
-			// layerParam.getData()));
-			// }
-		}
-		addChild(psdData, psd, psdFile);
-		return psdFile;
-	}
+        } else {
+            for (Layer layer : layers) {
+                BufferedImage bufferedImage = layer.getImage();
+                File file = new File(packFolder, layer.getName() + ".png");
+                try {
+                    Messager.send("saving image : " + file.getPath());
+                    FileOutputStream outputStream = new FileOutputStream(file);
+                    ImageIO.write(bufferedImage, "png", outputStream);
+                    outputStream.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
-	public static final void addChild(PSDData psdData, LayersContainer container, Folder folder) {
-		for (int i = 0; i < container.getLayersCount(); i++) {
-			Layer layer = container.getLayer(i);
-			Element actor = null;
-			if (layer.isFolder()) { // ÕâÊÇÒ»¸öÎÄ¼ş¼Ğ
-				actor = new Folder();
-			} else if (layer.isTextLayer()) { // ÕâÊÇÒ»¸öÎÄ±¾¶ÔÏó
-				Text text = new Text();
-				PsdText psdText = layer.getPsdText();
-				text.text = psdText.value;
-				text.a = psdText.a;
-				text.r = psdText.r;
-				text.g = psdText.g;
-				text.b = psdText.b;
-				text.fontSize = psdText.fontSize;
-				actor = text;
-			} else if (layer.getImage() != null) { // ÕâÊÇÒ»¸öÍ¼Æ¬
-				actor = new Pic();
-				if (EditorConfig.used_texture_packer) {
-					((Pic) actor).textureName = layer.getName();
-				} else {
-					((Pic) actor).textureName = layer.getName() + ".png";
-				}
-			}
+    public static final void filterImage(LayersContainer container, List<Layer> out) {
+        for (int i = 0; i < container.getLayersCount(); i++) {
+            Layer layer = container.getLayer(i);
+            if (layer.isFolder() || layer.isTextLayer()) {
+            } else if (layer.getImage() != null) {
+                out.add(layer);
+            }
+            filterImage(layer, out);
+        }
+    }
 
-			if (actor != null) { // ×ø±ê
-				actor.layerName = layer.getName();
-				actor.isVisible = layer.isVisible();
-				if (actor instanceof PsdFile) {
-				} else {
-					LayerBoundary boundary = LayerBoundary.getLayerBoundary(layer);
-					if (boundary != null) {
-						actor.x = boundary.getX();
-						actor.y = boundary.getY();
-						actor.width = boundary.getWidth();
-						actor.height = boundary.getHeight();
-					} else {
-						actor.x = layer.getX();
-						actor.y = layer.getY();
-						actor.width = layer.getWidth();
-						actor.height = layer.getHeight();
-					}
-					if (EditorConfig.used_libgdx_coordinate) { // Ê¹ÓÃ libgdx µÄ×ø±êÏµ
-						actor.y = folder.height - actor.y - actor.height;
-					}
-				}
-				folder.childs.add(actor);
-				// ÊÂ¼ş , ÕâÀïĞèÒªÈ¥µôÊÂ¼şµÄÓ³Éä id
-				List<LayerParam> layerParams = psdData.getLayerParams(layer);
-				if (layerParams != null && layerParams.size() > 0) {
-					actor.params = new ArrayList<Param>(layerParams.size());
-					// for (LayerParam layerParam : layerParams) {
-					//// actor.params.add(new Param(layerParam.getParamId(),
-					// layerParam.getData()));
-					// }
-				}
-				//
-				if (actor instanceof Folder) {
-					addChild(psdData, layer, (Folder) actor);
-				}
-			}
-		}
+    // å¯¹è±¡è½¬æ¢
+    public static final PsdFile translate(PSDData psdData) {
+        Psd psd = psdData.getCache();
+        PSDUtil.updatePsdLayerPosition(psd);
+        Rectangle rect = PSDUtil.getMaxSize(psd);
+        PsdFile psdFile = new PsdFile();
+        psdFile.width = psd.getWidth();
+        psdFile.height = psd.getHeight();
+        psdFile.maxWidth = rect.width;
+        psdFile.maxHeight = rect.height;
+        psdFile.psdName = psdData.getFileName();
+        // å‚æ•°
+        List<LayerParam> layerParams = psdData.getLayerParams(null);
+        if (layerParams != null && layerParams.size() > 0) {
+            psdFile.params = new ArrayList<Param>(layerParams.size());
+            // for (LayerParam layerParam : layerParams) {
+            //// psdFile.params.add(new Param(layerParam.getParamId(),
+            // layerParam.getData()));
+            // }
+        }
+        addChild(psdData, psd, psdFile);
+        return psdFile;
+    }
 
-	}
+    public static final void addChild(PSDData psdData, LayersContainer container, Folder folder) {
+        for (int i = 0; i < container.getLayersCount(); i++) {
+            Layer layer = container.getLayer(i);
+            Element actor = null;
+            if (layer.isFolder()) { // è¿™æ˜¯ä¸€ä¸ªæ–‡ä»¶å¤¹
+                actor = new Folder();
+            } else if (layer.isTextLayer()) { // è¿™æ˜¯ä¸€ä¸ªæ–‡æœ¬å¯¹è±¡
+                Text text = new Text();
+                PsdText psdText = layer.getPsdText();
+                text.text = psdText.value;
+                text.a = psdText.a;
+                text.r = psdText.r;
+                text.g = psdText.g;
+                text.b = psdText.b;
+                text.fontSize = psdText.fontSize;
+                actor = text;
+            } else if (layer.getImage() != null) { // è¿™æ˜¯ä¸€ä¸ªå›¾ç‰‡
+                actor = new Pic();
+                if (EditorConfig.used_texture_packer) {
+                    ((Pic) actor).textureName = layer.getName();
+                } else {
+                    ((Pic) actor).textureName = layer.getName() + ".png";
+                }
+            }
+
+            if (actor != null) { // åæ ‡
+                actor.layerName = layer.getName();
+                actor.isVisible = layer.isVisible();
+                if (actor instanceof PsdFile) {
+                } else {
+                    LayerBoundary boundary = LayerBoundary.getLayerBoundary(layer);
+                    if (boundary != null) {
+                        actor.x = boundary.getX();
+                        actor.y = boundary.getY();
+                        actor.width = boundary.getWidth();
+                        actor.height = boundary.getHeight();
+                    } else {
+                        actor.x = layer.getX();
+                        actor.y = layer.getY();
+                        actor.width = layer.getWidth();
+                        actor.height = layer.getHeight();
+                    }
+                    if (EditorConfig.used_libgdx_coordinate) { // ä½¿ç”¨ libgdx çš„åæ ‡ç³»
+                        actor.y = folder.height - actor.y - actor.height;
+                    }
+                }
+                folder.childs.add(actor);
+                // äº‹ä»¶ , è¿™é‡Œéœ€è¦å»æ‰äº‹ä»¶çš„æ˜ å°„ id
+                List<LayerParam> layerParams = psdData.getLayerParams(layer);
+                if (layerParams != null && layerParams.size() > 0) {
+                    actor.params = new ArrayList<Param>(layerParams.size());
+                    // for (LayerParam layerParam : layerParams) {
+                    //// actor.params.add(new Param(layerParam.getParamId(),
+                    // layerParam.getData()));
+                    // }
+                }
+                //
+                if (actor instanceof Folder) {
+                    addChild(psdData, layer, (Folder) actor);
+                }
+            }
+        }
+
+    }
 }

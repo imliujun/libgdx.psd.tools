@@ -4,14 +4,7 @@ import gdx.keyroy.psd.tools.models.KeyVal;
 
 import java.awt.Component;
 import java.awt.Desktop;
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,7 +45,7 @@ public class FileUtil {
 			String text = null;
 			while ((text = reader.readLine()) != null) {
 				try {
-					if (text.startsWith("#")) { // ×¢ÊÍ
+					if (text.startsWith("#")) { // æ³¨é‡Š
 						continue;
 					} else if (text.trim().length() > 0) {
 						KeyVal keyVal = new KeyVal();
@@ -101,7 +94,10 @@ public class FileUtil {
 	public static final void save(File file, String text) throws Exception {
 		file.createNewFile();
 		OutputStream outputStream = new FileOutputStream(file);
-		outputStream.write(text.getBytes());
+		OutputStreamWriter osw = new OutputStreamWriter(outputStream, "UTF-8");
+		osw.write(text);
+		osw.flush();
+		osw.close();
 		outputStream.close();
 	}
 
